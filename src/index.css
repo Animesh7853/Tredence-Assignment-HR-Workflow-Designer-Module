@@ -1,0 +1,31 @@
+/* src/index.css - Tailwind base + small helpers */
+@import "tailwindcss";
+
+/* small utility overrides and helper classes */
+
+:root {
+  --panel-bg: #ffffff;
+  --muted: #64748b;
+}
+
+/* subtle page background */
+html, body, #root {
+  height: 100%;
+  background: #f8fafc;
+}
+
+/* helper: reactflow canvas wrapper to ensure full space */
+.reactflow-wrapper {
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  overflow: hidden;
+}
+
+/* inspector card small helper (we will still compose in components) */
+.node-inspector {
+  background-color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  border: 1px solid #f3f4f6;
+}
