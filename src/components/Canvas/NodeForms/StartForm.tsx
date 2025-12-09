@@ -7,7 +7,7 @@ import { Type, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface StartFormProps {
   node: Node<any>;
-  onChange: (patch: any) => void;
+  onChange: (patch: any, saveVersion?: boolean) => void;
 }
 
 export default function StartForm({ node, onChange }: StartFormProps) {
@@ -41,9 +41,9 @@ export default function StartForm({ node, onChange }: StartFormProps) {
     setIsDirty(true);
   }
 
-  // Save changes to context
+  // Save changes to context with version tracking
   function handleSave() {
-    onChange(formData);
+    onChange(formData, true);
     setIsDirty(false);
   }
 

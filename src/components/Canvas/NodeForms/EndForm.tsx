@@ -7,7 +7,7 @@ import { MessageSquare, ChevronDown, ChevronUp, ListChecks } from 'lucide-react'
 
 interface EndFormProps {
   node: Node<any>;
-  onChange: (patch: any) => void;
+  onChange: (patch: any, saveVersion?: boolean) => void;
 }
 
 export default function EndForm({ node, onChange }: EndFormProps) {
@@ -43,9 +43,9 @@ export default function EndForm({ node, onChange }: EndFormProps) {
     setIsDirty(true);
   }
 
-  // Save changes to context
+  // Save changes to context with version tracking
   function handleSave() {
-    onChange(formData);
+    onChange(formData, true);
     setIsDirty(false);
   }
 

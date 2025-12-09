@@ -7,7 +7,7 @@ import { Type, UserCheck, ChevronDown, ChevronUp, Hash } from 'lucide-react';
 
 interface ApprovalFormProps {
   node: Node<any>;
-  onChange: (patch: any) => void;
+  onChange: (patch: any, saveVersion?: boolean) => void;
 }
 
 export default function ApprovalForm({ node, onChange }: ApprovalFormProps) {
@@ -45,9 +45,9 @@ export default function ApprovalForm({ node, onChange }: ApprovalFormProps) {
     setIsDirty(true);
   }
 
-  // Save changes to context
+  // Save changes to context with version tracking
   function handleSave() {
-    onChange(formData);
+    onChange(formData, true);
     setIsDirty(false);
   }
 

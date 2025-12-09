@@ -1,23 +1,38 @@
 // src/components/Canvas/nodes/TaskNode.tsx
-// Task node with icon, hover elevation, metadata badges, and improved layout
+// Task node with icon, hover elevation, metadata badges, and validation indicator
 
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { ClipboardList, User, Calendar } from 'lucide-react';
+import { ClipboardList, User, Calendar, AlertTriangle } from 'lucide-react';
+import { useValidation } from '../FlowCanvas';
 
-export default function TaskNode({ data, selected }: NodeProps<any>) {
+export default function TaskNode({ id, data, selected }: NodeProps<any>) {
+  const validationResults = useValidation();
+  const validation = validationResults[id];
+  const hasError = validation && !validation.valid;
+
   return (
     <div
       className={`
         relative p-4 rounded-xl bg-white
         border-2 transition-all duration-200 cursor-pointer
         hover:-translate-y-0.5 hover:shadow-lg
-        ${selected ? 'border-blue-500 shadow-lg ring-4 ring-blue-100' : 'border-gray-200 shadow-md'}
+        ${hasError ? 'border-red-400 ring-2 ring-red-100' : selected ? 'border-blue-500 shadow-lg ring-4 ring-blue-100' : 'border-gray-200 shadow-md'}
       `}
       style={{ width: 240, minHeight: 120 }}
       role="button"
       aria-label={`Task node: ${data.title || 'New Task'}`}
     >
+      {/* Validation warning icon */}
+      {hasError && (
+        <div
+          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md"
+          title={validation.message}
+        >
+          <AlertTriangle size={12} className="text-white" />
+        </div>
+      )}
+
       {/* Header with icon and title */}
       <div className="flex items-start gap-3">
         {/* Icon container */}
@@ -52,6 +67,13 @@ export default function TaskNode({ data, selected }: NodeProps<any>) {
           </div>
         )}
       </div>
+
+      {/* Validation message tooltip */}
+      {hasError && (
+        <div className="mt-2 text-xs text-red-600 bg-red-50 rounded px-2 py-1">
+          {validation.message}
+        </div>
+      )}
 
       {/* Handles */}
       <Handle

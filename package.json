@@ -9,6 +9,8 @@
     "start": "vite"
   },
   "dependencies": {
+    "@types/dagre": "^0.7.53",
+    "dagre": "^0.8.5",
     "lucide-react": "^0.556.0",
     "nanoid": "^4.0.0",
     "react": "^18.2.0",

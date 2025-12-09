@@ -1,23 +1,38 @@
 // src/components/Canvas/nodes/AutomatedNode.tsx
-// Automated node with icon, hover elevation, action badge, and improved layout
+// Automated node with icon, hover elevation, action badge, and validation indicator
 
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Zap, Settings } from 'lucide-react';
+import { Zap, Settings, AlertTriangle } from 'lucide-react';
+import { useValidation } from '../FlowCanvas';
 
-export default function AutomatedNode({ data, selected }: NodeProps<any>) {
+export default function AutomatedNode({ id, data, selected }: NodeProps<any>) {
+  const validationResults = useValidation();
+  const validation = validationResults[id];
+  const hasError = validation && !validation.valid;
+
   return (
     <div
       className={`
         relative p-4 rounded-xl bg-gradient-to-br from-sky-50 to-blue-100
         border-2 transition-all duration-200 cursor-pointer
         hover:-translate-y-0.5 hover:shadow-lg
-        ${selected ? 'border-sky-500 shadow-lg ring-4 ring-sky-100' : 'border-sky-200 shadow-md'}
+        ${hasError ? 'border-red-400 ring-2 ring-red-100' : selected ? 'border-sky-500 shadow-lg ring-4 ring-sky-100' : 'border-sky-200 shadow-md'}
       `}
       style={{ width: 220, minHeight: 100 }}
       role="button"
       aria-label={`Automated node: ${data.title || 'Automated'}`}
     >
+      {/* Validation warning icon */}
+      {hasError && (
+        <div
+          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md"
+          title={validation.message}
+        >
+          <AlertTriangle size={12} className="text-white" />
+        </div>
+      )}
+
       {/* Header with icon and title */}
       <div className="flex items-start gap-3">
         {/* Icon container */}

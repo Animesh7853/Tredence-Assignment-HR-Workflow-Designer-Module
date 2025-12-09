@@ -7,7 +7,7 @@ import { User, Calendar, FileText, ChevronDown, ChevronUp, Type } from 'lucide-r
 
 interface TaskFormProps {
   node: Node<any>;
-  onChange: (patch: any) => void;
+  onChange: (patch: any, saveVersion?: boolean) => void;
 }
 
 export default function TaskForm({ node, onChange }: TaskFormProps) {
@@ -47,9 +47,9 @@ export default function TaskForm({ node, onChange }: TaskFormProps) {
     setIsDirty(true);
   }
 
-  // Save changes to context
+  // Save changes to context with version tracking
   function handleSave() {
-    onChange(formData);
+    onChange(formData, true); // Pass true to save version
     setIsDirty(false);
   }
 

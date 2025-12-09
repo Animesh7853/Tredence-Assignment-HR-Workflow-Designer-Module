@@ -1,13 +1,14 @@
 // src/components/Canvas/NodeForms/NodeFormContainer.tsx
-// Improved node configuration panel with sticky header, clean layout, and delete button
+// Node configuration panel with version history support
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useWorkflowContext } from '../../../context/WorkflowContext';
 import StartForm from './StartForm';
 import TaskForm from './TaskForm';
 import ApprovalForm from './ApprovalForm';
 import AutomatedForm from './AutomatedForm';
 import EndForm from './EndForm';
+import HistoryModal, { VersionEntry } from '../HistoryModal';
 import { useToast } from '../../Toast/ToastProvider';
 import {
   Play,
@@ -16,6 +17,7 @@ import {
   Zap,
   Flag,
   Trash2,
+  History,
 } from 'lucide-react';
 
 // Helper to get icon for node type
@@ -45,6 +47,7 @@ export default function NodeFormContainer() {
   const { nodes, setNodes, removeNode } = useWorkflowContext();
   const toast = useToast();
   const selected = nodes.find((n) => (n as any).selected);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   // Empty state when no node selected
   if (!selected) {
@@ -62,13 +65,42 @@ export default function NodeFormContainer() {
   }
 
   const node = selected;
+  const nodeHistory: VersionEntry[] = node.data?._history || [];
 
-  // Update node data via context
-  function update(dataPatch: any) {
+  // Update node data via context with version tracking
+  function update(dataPatch: any, saveVersion: boolean = false) {
     setNodes((curr) =>
-      curr.map((n) =>
-        n.id === node.id ? { ...n, data: { ...n.data, ...dataPatch } } : n
-      )
+      curr.map((n) => {
+        if (n.id !== node.id) return n;
+
+        // If saving a version, compute changes and add to history
+        if (saveVersion) {
+          const changes: Record<string, { old: any; new: any }> = {};
+          const currentData = n.data || {};
+          
+          Object.keys(dataPatch).forEach((key) => {
+            if (key === '_history') return; // Skip history field
+            if (currentData[key] !== dataPatch[key]) {
+              changes[key] = { old: currentData[key], new: dataPatch[key] };
+            }
+          });
+
+          // Only add to history if there are actual changes
+          if (Object.keys(changes).length > 0) {
+            const newHistoryEntry: VersionEntry = {
+              timestamp: new Date().toISOString(),
+              changes,
+            };
+            const existingHistory = currentData._history || [];
+            dataPatch = {
+              ...dataPatch,
+              _history: [newHistoryEntry, ...existingHistory].slice(0, 50), // Keep last 50 versions
+            };
+          }
+        }
+
+        return { ...n, data: { ...n.data, ...dataPatch } };
+      })
     );
   }
 
@@ -84,6 +116,14 @@ export default function NodeFormContainer() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* History Modal */}
+      <HistoryModal
+        isOpen={historyModalOpen}
+        onClose={() => setHistoryModalOpen(false)}
+        nodeTitle={node.data?.title || getTypeLabel(node.type as string)}
+        history={nodeHistory}
+      />
+
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100 pb-3 mb-4">
         <div className="flex items-center justify-between">
@@ -96,20 +136,36 @@ export default function NodeFormContainer() {
               <div className="text-xs text-slate-500">
                 Editing: {getTypeLabel(node.type as string)}
               </div>
-              <div className="text-base font-semibold text-slate-900 truncate max-w-[180px]">
+              <div className="text-base font-semibold text-slate-900 truncate max-w-[140px]">
                 {node.data?.title || getTypeLabel(node.type as string)}
               </div>
             </div>
           </div>
-          {/* Delete button */}
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
-            aria-label="Delete node"
-          >
-            <Trash2 size={14} />
-            <span>Delete</span>
-          </button>
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
+            {/* History button */}
+            <button
+              onClick={() => setHistoryModalOpen(true)}
+              className="flex items-center gap-1 px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+              aria-label="View history"
+              title="View version history"
+            >
+              <History size={14} />
+              {nodeHistory.length > 0 && (
+                <span className="text-xs bg-violet-500 text-white px-1.5 rounded-full">
+                  {nodeHistory.length}
+                </span>
+              )}
+            </button>
+            {/* Delete button */}
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+              aria-label="Delete node"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -1,23 +1,38 @@
 // src/components/Canvas/nodes/ApprovalNode.tsx
-// Approval node with icon, hover elevation, approver role badge, and improved layout
+// Approval node with icon, hover elevation, approver role badge, and validation indicator
 
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { CheckCircle, UserCheck } from 'lucide-react';
+import { CheckCircle, UserCheck, AlertTriangle } from 'lucide-react';
+import { useValidation } from '../FlowCanvas';
 
-export default function ApprovalNode({ data, selected }: NodeProps<any>) {
+export default function ApprovalNode({ id, data, selected }: NodeProps<any>) {
+  const validationResults = useValidation();
+  const validation = validationResults[id];
+  const hasError = validation && !validation.valid;
+
   return (
     <div
       className={`
         relative p-4 rounded-xl bg-gradient-to-br from-amber-50 to-orange-100
         border-2 transition-all duration-200 cursor-pointer
         hover:-translate-y-0.5 hover:shadow-lg
-        ${selected ? 'border-amber-500 shadow-lg ring-4 ring-amber-100' : 'border-amber-200 shadow-md'}
+        ${hasError ? 'border-red-400 ring-2 ring-red-100' : selected ? 'border-amber-500 shadow-lg ring-4 ring-amber-100' : 'border-amber-200 shadow-md'}
       `}
       style={{ width: 220, minHeight: 100 }}
       role="button"
       aria-label={`Approval node: ${data.title || 'Approval'}`}
     >
+      {/* Validation warning icon */}
+      {hasError && (
+        <div
+          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md"
+          title={validation.message}
+        >
+          <AlertTriangle size={12} className="text-white" />
+        </div>
+      )}
+
       {/* Header with icon and title */}
       <div className="flex items-start gap-3">
         {/* Icon container */}
