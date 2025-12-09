@@ -11,15 +11,13 @@ export default function App() {
       <div className="min-h-screen grid grid-cols-[260px_1fr_360px] gap-4 p-3 bg-slate-50">
         {/* Left column */}
         <aside className="flex flex-col bg-white rounded-lg border border-gray-100 p-4 shadow-sm">
-          <div className="text-lg font-semibold mb-4">CodeAuto</div>
+          <div className="text-lg font-semibold mb-4">HR Ease</div>
 
           <div className="flex-1 overflow-auto">
             <FlowCanvas.SidebarPlaceholder />
           </div>
 
-          <div className="text-sm text-gray-500 mt-4">
-            Settings · Help
-          </div>
+          
         </aside>
 
         {/* Center canvas */}

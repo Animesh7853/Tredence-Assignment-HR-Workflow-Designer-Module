@@ -133,6 +133,7 @@ function FlowCanvasInner() {
             connectionLineType={ConnectionLineType.SmoothStep}
             connectionRadius={24}
             fitView
+            proOptions={{ hideAttribution: true }}
             // smoother navigation preferences
             panOnScroll={true}
             panOnScrollSpeed={0.3}
