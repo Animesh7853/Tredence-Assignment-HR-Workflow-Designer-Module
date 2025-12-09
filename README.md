@@ -2,9 +2,8 @@
 
 > A visual HR workflow builder built using **React**, **React Flow**, and **TypeScript**, supporting drag-and-drop nodes, configurable forms, mock APIs, and workflow simulation.
 
-[![Live Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](#) [![Deployment](https://img.shields.io/badge/Deployment-Pending-yellow)](#)
 
-**Deployment:** _[Add Link Here]_  
+**Deployment:** _https://tredence-assignment-hr-workflow-des.vercel.app/_  
 **Demo Link:** _[Add Link Here]_
 
 ---
