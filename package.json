@@ -9,7 +9,6 @@
     "start": "vite"
   },
   "dependencies": {
-    "msw": "^1.2.1",
     "nanoid": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -21,9 +20,15 @@
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^5.1.2",
     "autoprefixer": "^10.4.22",
+    "msw": "^2.12.4",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.5.0",
     "vite": "^7.2.7"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

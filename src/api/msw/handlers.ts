@@ -1,21 +1,47 @@
-import { rest } from 'msw';
-import { AUTOMATIONS } from './mockData';
+import { http, HttpResponse, delay } from 'msw';
+
+// Mock automation actions
+const mockAutomations = [
+  { id: 'send_email', label: 'Send Email', params: ['to', 'subject', 'body'] },
+  { id: 'send_slack', label: 'Send Slack Message', params: ['channel', 'message'] },
+  { id: 'create_ticket', label: 'Create Ticket', params: ['title', 'priority'] },
+  { id: 'update_record', label: 'Update Record', params: ['recordId', 'fields'] },
+  { id: 'notify_manager', label: 'Notify Manager', params: ['employeeId', 'message'] },
+];
 
 export const handlers = [
-  rest.get('/automations', (req, res, ctx) => {
-    return res(ctx.delay(200), ctx.json(AUTOMATIONS));
+  // GET /automations
+  http.get('/automations', async () => {
+    console.log('[MSW] GET /automations');
+    await delay(200);
+    return HttpResponse.json(mockAutomations);
   }),
 
-  rest.post('/simulate', async (req, res, ctx) => {
-    const payload = await req.json();
-    const nodes = payload.nodes || [];
-    // Mock: return steps iterating node order
-    const steps = nodes.map((n: any, i: number) => ({
+  // POST /simulate
+  http.post('/simulate', async ({ request }) => {
+    console.log('[MSW] POST /simulate');
+    const body = await request.json() as { nodes?: Array<{ id: string; type: string; data?: { title?: string } }> };
+    const nodes = body?.nodes ?? [];
+    
+    // Generate mock simulation steps based on payload
+    const steps = nodes.map((n, i) => ({
       nodeId: n.id,
       type: n.type,
-      message: `Executed ${n.type} "${(n.data && n.data.title) || ''}"`,
-      status: 'success'
+      message: `Executed ${n.type} "${n.data?.title ?? ''}"`,
+      status: 'success' as const,
     }));
-    return res(ctx.delay(400), ctx.json({ steps }));
-  })
+
+    // Add a default step if no nodes provided
+    if (steps.length === 0) {
+      steps.push({
+        nodeId: 'start',
+        type: 'start',
+        message: 'Workflow simulation started',
+        status: 'success' as const,
+      });
+    }
+
+    await delay(400);
+    return HttpResponse.json({ steps });
+  }),
 ];

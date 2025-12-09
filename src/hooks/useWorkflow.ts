@@ -1,3 +1,4 @@
+// src/hooks/useWorkflow.ts
 import { useCallback } from 'react';
 import { useWorkflowContext } from '../context/WorkflowContext';
 import { nanoid } from 'nanoid';
@@ -10,10 +11,10 @@ export function useWorkflow() {
     const id = nanoid();
     const defaultData = (() => {
       if (type === 'start') return { title: 'Start' };
-      if (type === 'task') return { title: 'New Task', assignee: '', description: '' };
+      if (type === 'task') return { title: 'New Task', assignee: '', description: '', dueDate: '' };
       if (type === 'approval') return { title: 'Approval', approverRole: 'Manager', autoApproveThreshold: 0 };
       if (type === 'automated') return { title: 'Automated Step', actionId: '', actionParams: {} };
-      if (type === 'end') return { title: 'End', endMessage: '' };
+      if (type === 'end') return { title: 'End', endMessage: '', summary: false };
       return {};
     })();
 

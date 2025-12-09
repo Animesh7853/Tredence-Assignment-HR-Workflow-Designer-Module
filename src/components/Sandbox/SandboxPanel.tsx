@@ -1,13 +1,16 @@
+// src/components/Sandbox/SandboxPanel.tsx
 import React, { useState } from 'react';
 import { useWorkflowContext } from '../../context/WorkflowContext';
 import { hasCycle } from '../../utils/graph';
 import { simulate } from '../../api/client';
+import { useToast } from '../Toast/ToastProvider';
 
 export default function SandboxPanel() {
   const { nodes, edges } = useWorkflowContext();
   const [logs, setLogs] = useState<any[]>([]);
   const [validErrors, setValidErrors] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
+  const toast = useToast();
 
   function validate() {
     const errors: string[] = [];
@@ -25,7 +28,10 @@ export default function SandboxPanel() {
   async function runSimulation() {
     const errs = validate();
     setValidErrors(errs);
-    if (errs.length) return;
+    if (errs.length) {
+      toast.error('Validation failed');
+      return;
+    }
     setRunning(true);
     setLogs([]);
     try {
@@ -35,8 +41,13 @@ export default function SandboxPanel() {
       };
       const res = await simulate(payload);
       setLogs(res.steps);
-    } catch (err) {
-      setLogs([{ nodeId: 'error', message: (err as Error).message, status: 'failed' }]);
+      toast.success('Simulation completed');
+    } catch (err: any) {
+      console.error('Simulation error', err);
+      // try to show informative message
+      const msg = (err && err.message) || 'Simulation failed';
+      setLogs([{ nodeId: 'error', message: msg, status: 'failed' }]);
+      toast.error(`Simulation failed: ${msg}`);
     } finally {
       setRunning(false);
     }
@@ -44,10 +55,12 @@ export default function SandboxPanel() {
 
   return (
     <div>
-      <button onClick={runSimulation} disabled={running} style={{ padding: 8 }}>{running ? 'Running...' : 'Run Simulation'}</button>
+      <button onClick={runSimulation} disabled={running} className="px-3 py-2 bg-indigo-600 text-white rounded">
+        {running ? 'Running...' : 'Run Simulation'}
+      </button>
 
       {validErrors.length > 0 && (
-        <div style={{ marginTop: 8, color: 'crimson' }}>
+        <div className="mt-3 text-sm text-red-600">
           <b>Validation Errors</b>
           <ul>
             {validErrors.map((e, i) => <li key={i}>{e}</li>)}
@@ -55,14 +68,14 @@ export default function SandboxPanel() {
         </div>
       )}
 
-      <div style={{ marginTop: 12 }}>
+      <div className="mt-4">
         <b>Execution Log</b>
-        <div style={{ maxHeight: 300, overflow: 'auto', marginTop: 8, border: '1px solid #eee', padding: 8 }}>
+        <div className="execution-log mt-2">
           {logs.length === 0 && <div>No logs yet</div>}
           {logs.map((l, i) => (
-            <div key={i} style={{ padding: 6, borderBottom: '1px solid #f3f3f3' }}>
+            <div key={i} className="p-2 border-b border-gray-100">
               <div><b>{l.nodeId}</b> — {l.message}</div>
-              <div style={{ fontSize: 12, color: l.status === 'success' ? 'green' : 'red' }}>{l.status}</div>
+              <div className="text-xs" style={{ color: l.status === 'success' ? 'green' : 'crimson' }}>{l.status}</div>
             </div>
           ))}
         </div>

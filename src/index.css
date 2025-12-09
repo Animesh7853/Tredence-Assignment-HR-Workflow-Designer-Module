@@ -29,3 +29,57 @@ html, body, #root {
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   border: 1px solid #f3f4f6;
 }
+
+/* Smooth viewport transforms to reduce feeling of jump */
+.react-flow__viewport {
+  transition: transform 120ms cubic-bezier(.2,.9,.4,1);
+}
+
+/* Make cursor feedback clear for pan vs drag */
+.react-flow__pane {
+  cursor: grab;
+}
+.react-flow__pane:active {
+  cursor: grabbing;
+}
+
+/* Slight smoothing while dragging nodes */
+.react-flow__node {
+  transition: box-shadow 110ms ease, transform 110ms ease;
+}
+
+/* Make handles easier to hit (bigger visual & hit area) */
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  margin: -6px 0 0 -6px; /* center the bigger handle */
+  border-radius: 6px !important;
+  border: 2px solid rgba(255,255,255,0.95);
+  box-shadow: 0 2px 6px rgba(2,6,23,0.08);
+}
+
+/* Differentiate source/target with color */
+.react-flow__handle.source {
+  background: #7c3aed !important;
+}
+.react-flow__handle.target {
+  background: #06b6d4 !important;
+}
+
+/* Slightly enlarge Minimap node blobs for readability */
+.react-flow__minimap .react-flow__minimap-node {
+  r: 5;
+}
+
+/* When an edge is being created, soften the line */
+.react-flow__connection-line {
+  stroke-width: 3 !important;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Optional: disable pointer events on inspector area to avoid accidental pan when using controls */
+.inspector-pane, .w-\[340px\] {
+  touch-action: none; /* improves pointer behaviour on touch devices */
+}
+

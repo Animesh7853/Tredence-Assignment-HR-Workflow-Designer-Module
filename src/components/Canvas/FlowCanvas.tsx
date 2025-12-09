@@ -12,7 +12,9 @@ import ReactFlow, {
   EdgeChange,
   NodeChange,
   MiniMap,
-  ConnectionLineType
+  ConnectionLineType,
+  OnNodesChange,
+  OnEdgesChange
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useWorkflow } from '../../hooks/useWorkflow';
@@ -23,26 +25,16 @@ import AutomatedNode from './nodes/AutomatedNode';
 import EndNode from './nodes/EndNode';
 import NodeFormContainer from './NodeForms/NodeFormContainer';
 
-const nodeTypes = {
-  start: StartNode,
-  task: TaskNode,
-  approval: ApprovalNode,
-  automated: AutomatedNode,
-  end: EndNode
-};
+const wrap = (Component: React.ComponentType<any>, removeNode: (id:string)=>void, removeEdge: (id:string)=>void) =>
+  (props: any) => <Component {...props} removeNode={removeNode} removeEdge={removeEdge} />;
 
-/* Sidebar node card UI - Tailwind classes */
 function NodeCard({ label, nodeType }: { label: string; nodeType: string }) {
   const onDragStart = (event: React.DragEvent) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
   };
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      className="flex items-center gap-3 p-3 mb-2 rounded-lg bg-white border border-gray-100 shadow-sm cursor-grab hover:translate-y-[-2px] transition-transform"
-    >
+    <div draggable onDragStart={onDragStart} className="flex items-center gap-3 p-3 mb-2 rounded-lg bg-white border border-gray-100 shadow-sm cursor-grab">
       <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-sm text-slate-700">●</div>
       <div className="font-medium text-slate-800">{label}</div>
     </div>
@@ -62,28 +54,43 @@ function Sidebar() {
   );
 }
 
-/* FlowCanvas */
+export default function FlowCanvasComponent() {
+  return (
+    <ReactFlowProvider>
+      <FlowCanvasInner />
+    </ReactFlowProvider>
+  );
+}
+
 function FlowCanvasInner() {
-  const { nodes, edges, setNodes, setEdges, addNode, addEdge: addEdgeToStore } = useWorkflow();
+  const { nodes, edges, setNodes, setEdges, addNode, addEdge, removeNode, removeEdge } = useWorkflow();
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
 
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
+  const nodeTypes = {
+    start: wrap(StartNode, removeNode, removeEdge),
+    task: wrap(TaskNode, removeNode, removeEdge),
+    approval: wrap(ApprovalNode, removeNode, removeEdge),
+    automated: wrap(AutomatedNode, removeNode, removeEdge),
+    end: wrap(EndNode, removeNode, removeEdge)
+  };
+
+  const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes(curr => applyNodeChanges(changes, curr));
   }, [setNodes]);
 
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+  const onEdgesChange: OnEdgesChange = useCallback((changes) => {
     setEdges(curr => applyEdgeChanges(changes, curr));
   }, [setEdges]);
 
   const onConnect = useCallback((connection: Connection) => {
-    addEdgeToStore({
+    addEdge({
       ...connection,
       type: 'smoothstep',
       animated: false,
       style: { stroke: '#7c3aed', strokeWidth: 3 },
       id: connection.source && connection.target ? `e${connection.source}-${connection.target}` : undefined
     } as Edge);
-  }, [addEdgeToStore]);
+  }, [addEdge]);
 
   const onDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -99,6 +106,10 @@ function FlowCanvasInner() {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
+
+  const onNodeDragStop = useCallback((_: any, node: Node) => {
+    setNodes(curr => curr.map(n => n.id === node.id ? { ...n, position: node.position } : n));
+  }, [setNodes]);
 
   const defaultEdgeOptions = {
     animated: false,
@@ -117,9 +128,19 @@ function FlowCanvasInner() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeDragStop={onNodeDragStop}
             defaultEdgeOptions={defaultEdgeOptions}
             connectionLineType={ConnectionLineType.SmoothStep}
+            connectionRadius={24}
             fitView
+            // smoother navigation preferences
+            panOnScroll={true}
+            panOnScrollSpeed={0.3}
+            zoomOnScroll={false}
+            zoomOnPinch={true}
+            zoomOnDoubleClick={false}
+            minZoom={0.2}
+            maxZoom={2}
             onDrop={onDrop}
             onDragOver={onDragOver}
             style={{ width: '100%', height: '100%' }}
@@ -139,19 +160,10 @@ function FlowCanvasInner() {
         </div>
       </div>
 
-      {/* in-canvas inspector panel on the right of canvas (optional), but App layout also has right column */}
       <div className="w-[340px] border-l border-gray-100 p-3 bg-transparent">
         <NodeFormContainer />
       </div>
     </div>
-  );
-}
-
-export default function FlowCanvasComponent() {
-  return (
-    <ReactFlowProvider>
-      <FlowCanvasInner />
-    </ReactFlowProvider>
   );
 }
 (FlowCanvasComponent as any).SidebarPlaceholder = Sidebar;
