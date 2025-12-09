@@ -83,3 +83,18 @@ html, body, #root {
   touch-action: none; /* improves pointer behaviour on touch devices */
 }
 
+/* execution-log helpers */
+.execution-log {
+  border: 1px solid #eef2f6;
+  border-radius: 8px;
+  background: #ffffff;
+  max-height: 520px;
+  overflow: auto;
+  padding: 6px;
+}
+
+.execution-log .font-medium {
+  color: #0f172a;
+}
+
+
