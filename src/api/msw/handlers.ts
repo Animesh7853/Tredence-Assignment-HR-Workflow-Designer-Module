@@ -14,9 +14,10 @@ export const handlers = [
     await delay(100);
     return HttpResponse.json([
       { id: 'send_email', label: 'Send Email', params: ['to', 'subject', 'body'] },
-      { id: 'generate_doc', label: 'Generate Document', params: ['template', 'recipient'] },
       { id: 'send_slack', label: 'Send Slack Message', params: ['channel', 'message'] },
       { id: 'create_ticket', label: 'Create Ticket', params: ['title', 'priority'] },
+      { id: 'generate_doc', label: 'Generate Document', params: ['template', 'recipient'] },
+      { id: 'notify_manager', label: 'Notify Manager', params: ['employeeId', 'message'] },
     ]);
   }),
 
