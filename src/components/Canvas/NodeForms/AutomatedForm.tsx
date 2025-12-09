@@ -1,24 +1,48 @@
 // src/components/Canvas/NodeForms/AutomatedForm.tsx
+// Automated form with Save/Cancel, action selection, and improved layout
+
 import React, { useEffect, useState } from 'react';
 import type { Node } from 'reactflow';
 import { getAutomations } from '../../../api/client';
 import type { AutomationAction } from '../../../types/api';
 import { useToast } from '../../Toast/ToastProvider';
+import { Type, Zap, Settings, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 
 /**
  * Module-level cache & error flag so we don't re-fetch or show duplicate toasts.
- * This keeps fetches idempotent even if the component mounts/unmounts frequently.
  */
 let automationCache: AutomationAction[] | null = null;
 let automationFetchPromise: Promise<AutomationAction[]> | null = null;
 let automationFetchErrored = false;
 
-export default function AutomatedForm({ node, onChange }: { node: Node<any>; onChange: (patch: any) => void }) {
+interface AutomatedFormProps {
+  node: Node<any>;
+  onChange: (patch: any) => void;
+}
+
+export default function AutomatedForm({ node, onChange }: AutomatedFormProps) {
   const [actions, setActions] = useState<AutomationAction[] | null>(automationCache);
   const [loading, setLoading] = useState<boolean>(!automationCache);
   const [error, setError] = useState<string | null>(automationFetchErrored ? 'Failed to fetch automations' : null);
   const toast = useToast();
 
+  // Local state for form editing - allows Cancel to revert changes
+  const [formData, setFormData] = useState({
+    title: node.data.title || '',
+    actionId: node.data.actionId || '',
+    actionParams: node.data.actionParams || {},
+    // Advanced fields
+    retryOnFail: node.data.retryOnFail || false,
+    maxRetries: node.data.maxRetries ?? 3,
+  });
+
+  // Track if form has unsaved changes
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Advanced section toggle
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Fetch automations on mount
   useEffect(() => {
     if (automationCache) {
       setActions(automationCache);
@@ -30,7 +54,6 @@ export default function AutomatedForm({ node, onChange }: { node: Node<any>; onC
     let mounted = true;
     setLoading(true);
 
-    // If a fetch is already in-flight, reuse its promise.
     if (!automationFetchPromise) {
       automationFetchPromise = getAutomations()
         .then((result) => {
@@ -40,7 +63,6 @@ export default function AutomatedForm({ node, onChange }: { node: Node<any>; onC
         })
         .catch((err) => {
           automationFetchErrored = true;
-          // Still rethrow so the awaiting callers can handle it
           throw err;
         })
         .finally(() => {
@@ -59,7 +81,6 @@ export default function AutomatedForm({ node, onChange }: { node: Node<any>; onC
         if (!mounted) return;
         setError('Failed to fetch automations');
         setLoading(false);
-        // show toast only once across app lifecycle
         if (!automationFetchErrored) {
           toast.error('Failed to fetch automations');
           automationFetchErrored = true;
@@ -70,68 +91,232 @@ export default function AutomatedForm({ node, onChange }: { node: Node<any>; onC
     return () => {
       mounted = false;
     };
-    // deliberately include `toast` in deps because it's stable from context
   }, [toast]);
 
-  const selectedAction = actions?.find((a) => a.id === node.data.actionId) ?? null;
+  // Sync local state when node changes
+  useEffect(() => {
+    setFormData({
+      title: node.data.title || '',
+      actionId: node.data.actionId || '',
+      actionParams: node.data.actionParams || {},
+      retryOnFail: node.data.retryOnFail || false,
+      maxRetries: node.data.maxRetries ?? 3,
+    });
+    setIsDirty(false);
+  }, [node.id]);
 
-  function setParam(key: string, value: string) {
-    onChange({ actionParams: { ...(node.data.actionParams || {}), [key]: value } });
+  const selectedAction = actions?.find((a) => a.id === formData.actionId) ?? null;
+
+  // Update local form state
+  function handleChange(field: string, value: any) {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  }
+
+  // Update action param
+  function handleParamChange(key: string, value: string) {
+    setFormData((prev) => ({
+      ...prev,
+      actionParams: { ...prev.actionParams, [key]: value },
+    }));
+    setIsDirty(true);
+  }
+
+  // Handle action selection change
+  function handleActionChange(actionId: string) {
+    setFormData((prev) => ({
+      ...prev,
+      actionId,
+      actionParams: {}, // Reset params when action changes
+    }));
+    setIsDirty(true);
+  }
+
+  // Save changes to context
+  function handleSave() {
+    onChange(formData);
+    setIsDirty(false);
+  }
+
+  // Cancel and revert to original node data
+  function handleCancel() {
+    setFormData({
+      title: node.data.title || '',
+      actionId: node.data.actionId || '',
+      actionParams: node.data.actionParams || {},
+      retryOnFail: node.data.retryOnFail || false,
+      maxRetries: node.data.maxRetries ?? 3,
+    });
+    setIsDirty(false);
   }
 
   return (
-    <div>
+    <div className="space-y-4">
+      {/* Title field */}
       <div>
-        <label className="text-sm font-medium block">Title</label>
+        <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
+          <Type size={14} />
+          Title
+        </label>
         <input
-          className="mt-1"
-          value={node.data.title || ''}
-          onChange={(e) => onChange({ title: e.target.value })}
+          type="text"
+          value={formData.title}
+          onChange={(e) => handleChange('title', e.target.value)}
+          placeholder="Enter automation title"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+          aria-label="Automation title"
         />
       </div>
 
-      <div className="mt-3">
-        <label className="text-sm font-medium block">Action</label>
+      {/* Divider */}
+      <hr className="border-gray-100" />
 
-        {loading && <div className="mt-1 text-sm text-slate-500">Loading...</div>}
+      {/* Action Selection */}
+      <div>
+        <label className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-1.5">
+          <Zap size={14} />
+          Action
+        </label>
+
+        {loading && (
+          <div className="flex items-center gap-2 py-2 text-sm text-slate-500">
+            <Loader2 size={14} className="animate-spin" />
+            Loading actions...
+          </div>
+        )}
 
         {!loading && error && (
-          <div className="mt-1 text-sm text-red-600">Unable to load actions</div>
+          <div className="py-2 text-sm text-red-600 bg-red-50 px-3 rounded-lg">
+            Unable to load actions. Please try again.
+          </div>
         )}
 
         {!loading && !error && (
-          <>
-            <select
-              className="mt-1 w-full"
-              value={node.data.actionId || ''}
-              onChange={(e) => onChange({ actionId: e.target.value, actionParams: {} })}
-            >
-              <option value="">-- select action --</option>
-              {actions && actions.length > 0 ? (
-                actions.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)
-              ) : (
-                <option value="" disabled>-- no actions available --</option>
-              )}
-            </select>
-          </>
+          <select
+            value={formData.actionId}
+            onChange={(e) => handleActionChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+            aria-label="Select action"
+          >
+            <option value="">-- Select an action --</option>
+            {actions && actions.length > 0 ? (
+              actions.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))
+            ) : (
+              <option value="" disabled>
+                No actions available
+              </option>
+            )}
+          </select>
         )}
       </div>
 
-      {selectedAction && (
-        <div className="mt-3">
-          <div className="text-sm font-medium">Action Parameters</div>
-          {selectedAction.params.map((p) => (
-            <div key={p} className="mt-2">
-              <label className="text-sm block">{p}</label>
-              <input
-                className="mt-1 w-full"
-                value={(node.data.actionParams && node.data.actionParams[p]) || ''}
-                onChange={(e) => setParam(p, e.target.value)}
-              />
-            </div>
-          ))}
+      {/* Action Parameters */}
+      {selectedAction && selectedAction.params.length > 0 && (
+        <div className="border border-gray-100 rounded-lg p-3 bg-slate-50">
+          <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700 mb-3">
+            <Settings size={14} />
+            Action Parameters
+          </div>
+          <div className="space-y-3">
+            {selectedAction.params.map((param) => (
+              <div key={param}>
+                <label className="text-sm text-slate-600 mb-1 block capitalize">
+                  {param}
+                </label>
+                <input
+                  type="text"
+                  value={formData.actionParams[param] || ''}
+                  onChange={(e) => handleParamChange(param, e.target.value)}
+                  placeholder={`Enter ${param}`}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  aria-label={param}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Advanced section (collapsible) */}
+      <div className="border border-gray-100 rounded-lg overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors text-sm font-medium text-slate-600"
+          aria-expanded={showAdvanced}
+        >
+          <span>Advanced Options</span>
+          {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+        {showAdvanced && (
+          <div className="p-3 space-y-3 bg-white">
+            {/* Retry on fail */}
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="retry-fail"
+                checked={formData.retryOnFail}
+                onChange={(e) => handleChange('retryOnFail', e.target.checked)}
+                className="w-4 h-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500"
+              />
+              <label htmlFor="retry-fail" className="text-sm font-medium text-slate-700 cursor-pointer">
+                Retry on failure
+              </label>
+            </div>
+            {/* Max Retries */}
+            {formData.retryOnFail && (
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1.5 block">
+                  Max Retries
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={formData.maxRetries}
+                  onChange={(e) => handleChange('maxRetries', Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  aria-label="Max retries"
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Save / Cancel buttons */}
+      <div className="flex items-center gap-2 pt-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!isDirty}
+          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            isDirty
+              ? 'bg-sky-600 hover:bg-sky-700 text-white'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+          aria-label="Save changes"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={handleCancel}
+          disabled={!isDirty}
+          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+            isDirty
+              ? 'border-gray-300 text-slate-700 hover:bg-slate-50'
+              : 'border-gray-200 text-gray-400 cursor-not-allowed'
+          }`}
+          aria-label="Cancel changes"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
