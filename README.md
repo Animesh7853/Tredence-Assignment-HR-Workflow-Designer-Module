@@ -104,3 +104,9 @@ http://localhost:5173
 | Node Version History (edit history per node) | ✅ |
 | Inline error markers on nodes | ✅ |
 
+### Output
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ba724754-e6a5-4a45-9027-b28ed3506c53" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/092af725-5e53-4eda-901a-7e4c9d49b1f3" />
+
+
+
